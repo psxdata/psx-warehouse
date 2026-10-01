@@ -31,10 +31,10 @@ dbt = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mtauha/psx-warehouse"
-Source = "https://github.com/mtauha/psx-warehouse"
-"Bug Tracker" = "https://github.com/mtauha/psx-warehouse/issues"
-Changelog = "https://github.com/mtauha/psx-warehouse/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/psxdata/psx-warehouse"
+Source = "https://github.com/psxdata/psx-warehouse"
+"Bug Tracker" = "https://github.com/psxdata/psx-warehouse/issues"
+Changelog = "https://github.com/psxdata/psx-warehouse/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
