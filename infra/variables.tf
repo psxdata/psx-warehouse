@@ -27,6 +27,12 @@ variable "docker_image" {
   default     = "docker.io/mtauha/psx-warehouse:latest"
 }
 
+variable "github_repository_id" {
+  description = "Immutable numeric GitHub repository ID (psxdata/psx-warehouse) that Workload Identity Federation trusts."
+  type        = string
+  default     = "1350817881"
+}
+
 variable "schedule_cron" {
   description = "Cron expression for the extraction run, weekdays (Mon-Fri) only -- PSX doesn't trade on weekends."
   type        = string
