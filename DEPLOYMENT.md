@@ -284,7 +284,7 @@ take over unsupervised.
   that exact image digest via Workload Identity Federation, on every push
   to `main`.
 - `dbt-docs.yml` — publishes dbt docs to GitHub Pages
-  (https://mtauha.github.io/psx-warehouse/) on every `dbt/` change.
+  (https://psxdata.github.io/psx-warehouse/) on every `dbt/` change.
 
 ## Known limitation: dbt writes into the `raw` dataset
 

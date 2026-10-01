@@ -1,13 +1,13 @@
 # PSX Analytics Warehouse
 
-[![CI](https://github.com/mtauha/psx-warehouse/actions/workflows/ci.yml/badge.svg)](https://github.com/mtauha/psx-warehouse/actions/workflows/ci.yml)
-[![Docker Publish](https://github.com/mtauha/psx-warehouse/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/mtauha/psx-warehouse/actions/workflows/docker-publish.yml)
-[![dbt docs status](https://github.com/mtauha/psx-warehouse/actions/workflows/dbt-docs.yml/badge.svg)](https://github.com/mtauha/psx-warehouse/actions/workflows/dbt-docs.yml)
+[![CI](https://github.com/psxdata/psx-warehouse/actions/workflows/ci.yml/badge.svg)](https://github.com/psxdata/psx-warehouse/actions/workflows/ci.yml)
+[![Docker Publish](https://github.com/psxdata/psx-warehouse/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/psxdata/psx-warehouse/actions/workflows/docker-publish.yml)
+[![dbt docs status](https://github.com/psxdata/psx-warehouse/actions/workflows/dbt-docs.yml/badge.svg)](https://github.com/psxdata/psx-warehouse/actions/workflows/dbt-docs.yml)
 [![Docker Hub](https://img.shields.io/badge/docker-mtauha%2Fpsx--warehouse-blue?logo=docker)](https://hub.docker.com/r/mtauha/psx-warehouse)
-[![License: MIT](https://img.shields.io/github/license/mtauha/psx-warehouse)](LICENSE.md)
-[![dbt docs](https://img.shields.io/badge/dbt%20docs-view-orange)](https://mtauha.github.io/psx-warehouse/)
+[![License: MIT](https://img.shields.io/github/license/psxdata/psx-warehouse)](LICENSE.md)
+[![dbt docs](https://img.shields.io/badge/dbt%20docs-view-orange)](https://psxdata.github.io/psx-warehouse/)
 
-dbt-core + BigQuery analytics layer on top of the [`psxdata`](https://github.com/mtauha/psxdata) SDK, turning raw Pakistan Stock Exchange (PSX) OHLCV data into tested, analysis-ready marts.
+dbt-core + BigQuery analytics layer on top of the [`psxdata`](https://github.com/psxdata/psxdata) SDK, turning raw Pakistan Stock Exchange (PSX) OHLCV data into tested, analysis-ready marts.
 
 Every run: pull the current KSE-100 constituents and their full OHLCV history
 from PSX, load it into an append-only, hash-diffed raw layer (no restatement
@@ -58,7 +58,7 @@ sync, or deploying your own copy to GCP): [DEPLOYMENT.md](DEPLOYMENT.md).
   that exact image digest via Workload Identity Federation, on every push
   to `main`.
 - `dbt-docs.yml` — publishes the dbt lineage docs to
-  [GitHub Pages](https://mtauha.github.io/psx-warehouse/) on every `dbt/`
+  [GitHub Pages](https://psxdata.github.io/psx-warehouse/) on every `dbt/`
   change.
 
 ## License

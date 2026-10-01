@@ -54,15 +54,17 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   display_name                       = "GitHub Actions OIDC"
 
   attribute_mapping = {
-    "google.subject"       = "assertion.sub"
-    "attribute.repository" = "assertion.repository"
-    "attribute.ref"        = "assertion.ref"
+    "google.subject"          = "assertion.sub"
+    "attribute.repository"    = "assertion.repository"
+    "attribute.repository_id" = "assertion.repository_id"
+    "attribute.ref"           = "assertion.ref"
   }
 
   # Pinned to this repo AND the main branch -- not just the repo alone (independent security
   # review, 2026-09-18: repo-only would let any future workflow requesting id-token: write
-  # silently inherit deploy access).
-  attribute_condition = "attribute.repository == \"mtauha/psx-warehouse\" && attribute.ref == \"refs/heads/main\""
+  # silently inherit deploy access). The repo is matched on its immutable numeric ID rather
+  # than its name, so a transfer/rename doesn't break trust and a recycled name can't inherit it.
+  attribute_condition = "attribute.repository_id == \"${var.github_repository_id}\" && attribute.ref == \"refs/heads/main\""
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
@@ -72,5 +74,5 @@ resource "google_iam_workload_identity_pool_provider" "github" {
 resource "google_service_account_iam_member" "github_actions_impersonates_deployer" {
   service_account_id = google_service_account.deployer.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/mtauha/psx-warehouse"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository_id/${var.github_repository_id}"
 }
