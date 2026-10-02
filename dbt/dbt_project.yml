@@ -23,3 +23,12 @@ models:
     marts:
       +materialized: table
       +schema: marts
+      +persist_docs:
+        relation: true
+        columns: true
+
+snapshots:
+  psx_warehouse:
+    +persist_docs:
+      relation: true
+      columns: true

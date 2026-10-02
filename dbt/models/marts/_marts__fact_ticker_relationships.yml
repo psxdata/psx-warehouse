@@ -7,33 +7,40 @@ models:
       (vs. index, vs. own sector), rolling 252-trading-day window.
     columns:
       - name: ticker_key
+        description: Key of the dim_tickers version valid on this date.
         tests: [not_null, relationships: {to: ref('dim_tickers'), field: dbt_scd_id}]
       - name: symbol
         description: Ticker symbol, stable across dim_tickers SCD2 versions.
         tests: [not_null]
       - name: date
+        description: Trading date.
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: beta_full_252d
+        description: 252-day beta of daily returns versus the KSE-100; NULL until 252 observations exist.
         tests:
           - dbt_utils.accepted_range:
               min_value: -10
               max_value: 10
               config: {severity: warn}
       - name: beta_upside_252d
+        description: 252-day beta using only days the KSE-100 did not fall (return >= 0); the SQL requires 252 qualifying days within the 252-row window, so it is NULL unless every day in the window qualifies.
         tests:
           - dbt_utils.accepted_range:
               min_value: -10
               max_value: 10
               config: {severity: warn}
       - name: beta_downside_252d
+        description: 252-day beta using only days the KSE-100 fell; the SQL requires 252 qualifying days within the 252-row window, so it is NULL unless every day in the window qualifies.
         tests:
           - dbt_utils.accepted_range:
               min_value: -10
               max_value: 10
               config: {severity: warn}
       - name: corr_vs_index_252d
+        description: 252-day correlation of daily returns with the KSE-100; NULL until 252 observations exist.
         tests: [{dbt_utils.accepted_range: {min_value: -1, max_value: 1}}]
       - name: corr_vs_sector_252d
+        description: 252-day correlation of daily returns with the stock's own sector (cap-weighted KSE-100 constituents); NULL until 252 observations exist.
         tests: [{dbt_utils.accepted_range: {min_value: -1, max_value: 1}}]
     tests:
       - dbt_utils.unique_combination_of_columns:

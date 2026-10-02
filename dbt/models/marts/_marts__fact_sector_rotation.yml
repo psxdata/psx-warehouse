@@ -7,15 +7,24 @@ models:
       vs. the KSE-100's, ranked into quintiles across sectors each day.
     columns:
       - name: sector_code
+        description: PSX sector code; joins dim_sectors.
         tests: [not_null, relationships: {to: ref('dim_sectors'), field: sector_code}]
       - name: date
+        description: Trading date.
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: rotation_quintile
+        description: Quintile of relative strength across sectors, 1-5; 1 = strongest.
         tests:
           - accepted_values:
               values: [1, 2, 3, 4, 5]
               quote: false
               config: {where: "rotation_quintile is not null"}
+      - name: sector_return_63d
+        description: Sector's trailing 63-trading-day return, as a fraction; compounded from cap-weighted daily returns of KSE-100 constituents.
+      - name: relative_strength_vs_market_63d
+        description: sector_return_63d minus the KSE-100's 63-day return, as a fraction.
+      - name: rotation_rank
+        description: Rank of relative strength across sectors on this date; 1 = strongest sector, ties share a rank.
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [sector_code, date]

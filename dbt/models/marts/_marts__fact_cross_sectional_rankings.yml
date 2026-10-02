@@ -9,33 +9,55 @@ models:
       pattern on top of this, not baked in here.
     columns:
       - name: ticker_key
+        description: Key of the dim_tickers version valid on this date; join dim_tickers.dbt_scd_id for the symbol.
         tests: [not_null, relationships: {to: ref('dim_tickers'), field: dbt_scd_id}]
       - name: date
+        description: Trading date.
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: momentum_63d_quintile
+        description: Quintile of momentum_63d, 1-5; 1 = highest momentum.
         tests:
           - accepted_values:
               values: [1, 2, 3, 4, 5]
               quote: false
               config: {where: "momentum_63d_quintile is not null"}
       - name: relative_strength_63d_quintile
+        description: Quintile of relative_strength_63d, 1-5; 1 = highest relative strength.
         tests:
           - accepted_values:
               values: [1, 2, 3, 4, 5]
               quote: false
               config: {where: "relative_strength_63d_quintile is not null"}
       - name: pe_ratio_quintile
+        description: Quintile of pe_ratio, 1-5; 1 = lowest P/E.
         tests:
           - accepted_values:
               values: [1, 2, 3, 4, 5]
               quote: false
               config: {where: "pe_ratio_quintile is not null"}
       - name: low_vol_quintile
+        description: Quintile by low volatility, 1-5; 1 = lowest volatility.
         tests:
           - accepted_values:
               values: [1, 2, 3, 4, 5]
               quote: false
               config: {where: "low_vol_quintile is not null"}
+      - name: momentum_63d
+        description: Trailing 63-trading-day return, as a fraction (0.1 means 10%).
+      - name: momentum_63d_rank
+        description: Rank of momentum_63d within the day's universe; 1 = highest momentum, ties share a rank.
+      - name: relative_strength_63d
+        description: 63-day return minus the KSE-100's 63-day return, as a fraction.
+      - name: relative_strength_63d_rank
+        description: Rank of relative_strength_63d within the day's universe; 1 = highest relative strength, ties share a rank.
+      - name: pe_ratio
+        description: Price-to-earnings ratio on this date; NULL when P/E is zero or negative.
+      - name: pe_ratio_rank
+        description: Rank of pe_ratio within the day's universe; 1 = lowest positive P/E, ties share a rank.
+      - name: rolling_vol_200
+        description: 200-day rolling volatility of daily returns, as a fraction; not annualized.
+      - name: low_vol_rank
+        description: Rank by low volatility within the day's universe; 1 = lowest rolling_vol_200, ties share a rank.
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [ticker_key, date]

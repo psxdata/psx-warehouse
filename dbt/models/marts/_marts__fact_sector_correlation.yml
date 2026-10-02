@@ -7,12 +7,16 @@ models:
       pair stored once in canonical order (sector_code_a < sector_code_b).
     columns:
       - name: sector_code_a
+        description: First sector code of the pair (always less than sector_code_b).
         tests: [not_null, relationships: {to: ref('dim_sectors'), field: sector_code}]
       - name: sector_code_b
+        description: Second sector code of the pair.
         tests: [not_null, relationships: {to: ref('dim_sectors'), field: sector_code}]
       - name: date
+        description: Trading date.
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: correlation_252d
+        description: Rolling correlation of the two sectors' daily returns over the trailing 252 trading days (fewer early in the history), -1 to 1.
         tests: [{dbt_utils.accepted_range: {min_value: -1, max_value: 1}}]
     tests:
       - dbt_utils.unique_combination_of_columns:

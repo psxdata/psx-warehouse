@@ -2,46 +2,73 @@ version: 2
 
 models:
   - name: fact_ohlcv
+    description: Daily OHLCV prices per stock in PKR, latest version of each row, NOT adjusted for splits, bonuses or dividends. KSE-100 constituents only.
     columns:
       - name: ticker_key
+        description: Key of the dim_tickers version valid on this date.
         tests: [not_null, relationships: {to: ref('dim_tickers'), field: dbt_scd_id}]
       - name: date
+        description: Trading date.
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: is_ticker_attrs_assumed
+        description: True if ticker attributes came from the earliest dim_tickers version because none was valid on this date.
         tests: [not_null]
       - name: open
+        description: Opening price, PKR.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: high
+        description: Day high, PKR.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: low
+        description: Day low, PKR.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: close
+        description: Closing price, PKR.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: volume
+        description: Shares traded.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
+      - name: symbol
+        description: Ticker symbol.
+      - name: is_anomaly
+        description: True if the row failed OHLC or volume validation; exclude from analysis.
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [symbol, date]
 
   - name: fact_restatement_history
+    description: How many times each stock-day price record has been loaded or restated by PSX, with first and last load times.
     columns:
       - name: ticker_key
+        description: Key of the dim_tickers version valid on this date.
         tests: [not_null, relationships: {to: ref('dim_tickers'), field: dbt_scd_id}]
       - name: date
+        description: Trading date.
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: restatement_count
+        description: Number of distinct versions loaded for this stock-day; 1 means never restated.
         tests: [not_null, {dbt_utils.accepted_range: {min_value: 1}}]
       - name: is_ticker_attrs_assumed
+        description: True if ticker attributes came from the earliest dim_tickers version because none was valid on this date.
         tests: [not_null]
+      - name: symbol
+        description: Ticker symbol.
+      - name: first_loaded_at
+        description: When the first version was loaded.
+      - name: last_loaded_at
+        description: When the latest version was loaded.
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [symbol, date]
 
   - name: fact_index_membership
+    description: Point-in-time index constituents per snapshot date, with weight, point contribution, market cap, free float and shares.
     columns:
       - name: index_name
+        description: Index name, e.g. KSE100.
         tests: [not_null, relationships: {to: ref('dim_indices'), field: index_name}]
       - name: ticker_key
+        description: Key of the dim_tickers version valid on the snapshot date; NULL before the ticker history begins.
         # dim_tickers is a snapshot with a bootstrap horizon (dbt_valid_from
         # of its earliest row = whenever the snapshot first ran). Per this
         # task's plain-join design (no as_of_ticker_join fallback), any
@@ -59,68 +86,97 @@ models:
               to: ref('dim_tickers')
               field: dbt_scd_id
       - name: snapshot_date
+        description: Date the constituent list was captured.
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: idx_weight
+        description: Constituent weight in the index, percent.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: idx_point
+        description: Constituent's signed point contribution to the index move; can be negative.
         # IDX POINT is each stock's signed point-contribution to the index's
         # move (can be negative), not an index level - no non-negativity
         # constraint applies.
       - name: market_cap_m
+        description: Market capitalization, PKR millions.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: freefloat_m
+        description: Free-float market capitalization, PKR millions.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: shares_m
+        description: Shares outstanding, millions.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: current_index
+        description: Index level at the snapshot.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
+      - name: symbol
+        description: Constituent ticker symbol.
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [index_name, symbol, snapshot_date]
 
   - name: fact_index_ohlcv
+    description: Daily OHLCV and percent change per market index.
     columns:
       - name: index_name
+        description: Index name, e.g. KSE100.
         tests: [not_null, relationships: {to: ref('dim_indices'), field: index_name}]
       - name: date
+        description: Trading date.
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: open
+        description: Opening index level.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: high
+        description: Day high index level.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: low
+        description: Day low index level.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: close
+        description: Closing index level.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: volume
+        description: Index volume; NULL for some early dates.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
+      - name: change_pct
+        description: Percent change of close versus the previous trading day, as a percentage (0.54 means 0.54%); loaded from a static seed.
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [index_name, date]
 
   - name: fact_sector_daily
+    description: "Daily sector snapshot: advancers, decliners, unchanged, turnover and market cap per sector."
     columns:
       - name: sector_code
+        description: PSX sector code; joins dim_sectors.
         tests: [not_null, relationships: {to: ref('dim_sectors'), field: sector_code}]
       - name: date
+        description: Snapshot date.
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: advance
+        description: Number of advancing stocks.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: decline
+        description: Number of declining stocks.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: unchanged
+        description: Number of unchanged stocks.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: turnover
+        description: Shares traded in the sector.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: market_cap_b
+        description: Sector market capitalization, PKR billions.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [sector_code, date]
 
   - name: fact_valuation_daily
+    description: "Daily valuation snapshot per stock from the PSX screener: price, market cap, P/E, dividend yield, free float, 30-day average volume and 1-year change."
     columns:
       - name: ticker_key
+        description: Key of the dim_tickers version valid on this date; NULL for symbols absent from dim_tickers.
         # Unlike fact_index_membership's gap (a temporal bootstrap-horizon
         # effect from dim_tickers' snapshot only starting today), this NULL
         # set is a symbol-coverage gap between two independent PSX endpoints:
@@ -140,29 +196,43 @@ models:
               to: ref('dim_tickers')
               field: dbt_scd_id
       - name: date
+        description: Snapshot date.
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: market_cap
+        description: Market capitalization, PKR.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: price
+        description: Last price, PKR.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: pe_ratio
+        description: Price-to-earnings ratio.
         tests:
           - dbt_utils.accepted_range:
               min_value: -1000
               max_value: 1000
               config: {severity: warn}
       - name: dividend_yield
+        description: Dividend yield, percent.
         tests:
           - dbt_utils.accepted_range:
               min_value: 0
               max_value: 100
               config: {severity: warn}
       - name: free_float
+        description: Free float, percent.
         tests:
           - dbt_utils.accepted_range:
               min_value: 0
               max_value: 100
               config: {severity: warn}
+      - name: symbol
+        description: Ticker symbol.
+      - name: volume_avg_30d
+        description: 30-day average daily volume.
+      - name: change_1y_pct
+        description: One-year price change, percent.
+      - name: listed_in
+        description: Indices the stock is listed in, as reported by the screener.
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [symbol, date]

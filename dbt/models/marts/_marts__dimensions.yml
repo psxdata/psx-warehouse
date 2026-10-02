@@ -2,14 +2,42 @@ version: 2
 
 models:
   - name: dim_sectors
+    description: PSX sectors with their latest name.
     columns:
       - name: sector_code
+        description: PSX sector code (string, e.g. "0801").
         tests: [not_null, unique]
+      - name: sector_name
+        description: Latest sector name.
   - name: dim_indices
+    description: PSX indices tracked by the warehouse.
     columns:
       - name: index_name
+        description: Index name, e.g. KSE100.
         tests: [not_null, unique]
   - name: dim_date
+    description: Calendar dimension, one row per day from 2000 to 2035, with year, quarter, month, weekday and period-end flags.
     columns:
       - name: date
+        description: Calendar date.
         tests: [not_null, unique]
+      - name: year
+        description: Calendar year.
+      - name: quarter
+        description: Calendar quarter, 1-4.
+      - name: month
+        description: Calendar month, 1-12.
+      - name: day
+        description: Day of month, 1-31.
+      - name: day_of_week
+        description: Day of week number, 1 = Sunday through 7 = Saturday.
+      - name: day_name
+        description: Weekday name.
+      - name: week_of_year
+        description: ISO week number.
+      - name: is_month_end
+        description: True on the last calendar day of the month.
+      - name: is_quarter_end
+        description: True on the last calendar day of the quarter.
+      - name: is_year_end
+        description: True on the last calendar day of the year.
