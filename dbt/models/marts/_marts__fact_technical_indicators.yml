@@ -2,30 +2,68 @@ version: 2
 
 models:
   - name: fact_technical_indicators
+    description: "Daily technical indicators per stock: moving averages, RSI, MACD, Bollinger bands, rolling volatility, trailing returns, drawdown and golden/death-cross events."
     columns:
       - name: ticker_key
+        description: Key of the dim_tickers version valid on this date.
         tests:
           - not_null
           - relationships:
               to: ref('dim_tickers')
               field: dbt_scd_id
       - name: symbol
+        description: Ticker symbol.
         tests: [not_null]
       - name: date
+        description: Trading date.
         tests:
           - not_null
           - relationships:
               to: ref('dim_date')
               field: date
       - name: max_drawdown_pct
+        description: "Drawdown of close from its running peak to date, as a fraction: 0 at a new high, negative below it (-0.2 means 20% below the peak)."
         tests: [not_null]
       - name: ma_crossover_event
+        description: golden_cross or death_cross when the 50-day MA crosses the 200-day MA on this date, else NULL.
         tests:
           - accepted_values:
               values: ['golden_cross', 'death_cross']
               quote: true
               config:
                 where: "ma_crossover_event is not null"
+      - name: daily_return_pct
+        description: Close-to-close return versus the previous trading day, as a fraction (0.01 means 1%), not a percentage.
+      - name: ma_20
+        description: 20-day simple moving average of close.
+      - name: ma_50
+        description: 50-day simple moving average of close.
+      - name: ma_200
+        description: 200-day simple moving average of close.
+      - name: rsi_14
+        description: 14-day relative strength index, 0-100, from simple (not Wilder-smoothed) 14-day averages of gains and losses; 100 when there were no losses, NULL when there were no price changes.
+      - name: macd_line
+        description: MACD line (12-day EMA of close minus 26-day EMA of close; EMAs are computed over a truncated lookback of 90 and 180 rows).
+      - name: macd_signal
+        description: 9-day EMA of the MACD line.
+      - name: macd_histogram
+        description: MACD line minus signal.
+      - name: bollinger_upper
+        description: Upper Bollinger band (20-day MA of close plus 2 sample standard deviations of close).
+      - name: bollinger_mid
+        description: Middle Bollinger band (20-day MA of close).
+      - name: bollinger_lower
+        description: Lower Bollinger band (20-day MA of close minus 2 sample standard deviations of close).
+      - name: rolling_vol_20
+        description: Sample standard deviation of daily returns over the last 20 trading days, as a fraction; not annualized.
+      - name: rolling_vol_50
+        description: Sample standard deviation of daily returns over the last 50 trading days, as a fraction; not annualized.
+      - name: rolling_vol_200
+        description: Sample standard deviation of daily returns over the last 200 trading days, as a fraction; not annualized.
+      - name: trailing_return_5d
+        description: Return over the trailing 5 trading days, as a fraction (0.01 means 1%).
+      - name: trailing_return_252d
+        description: Return over the trailing 252 trading days, as a fraction (0.01 means 1%).
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [symbol, date]

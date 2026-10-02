@@ -2,12 +2,14 @@ version: 2
 
 snapshots:
   - name: dim_tickers
+    description: Ticker dimension with full change history (SCD2) of name, sector and listing flags; the current version has dbt_valid_to NULL.
     columns:
       # dbt_scd_id is the parent key every fact's relationships test points at
       # (ticker_key); guard its own uniqueness so a broken FK reference on any
       # fact can be traced back to a real dim_tickers problem, not a false
       # positive from a non-unique parent key.
       - name: dbt_scd_id
+        description: Surrogate key of this version; facts reference it as ticker_key.
         tests:
           - unique
       # sector_code is null for real PSX symbols the sectors() extraction doesn't cover today
@@ -18,6 +20,7 @@ snapshots:
       # comparing, so this known gap never triggers it — it stays armed as a real FK-integrity
       # guard against any future broken sector_code match.
       - name: sector_code
+        description: PSX sector code; joins dim_sectors. NULL for some debt instruments.
         tests:
           - not_null:
               config:
@@ -25,6 +28,24 @@ snapshots:
           - relationships:
               to: ref('dim_sectors')
               field: sector_code
+      - name: symbol
+        description: Ticker symbol.
+      - name: name
+        description: Company name.
+      - name: is_etf
+        description: True if the symbol is an exchange-traded fund.
+      - name: is_debt
+        description: True if the symbol is a debt instrument.
+      - name: is_gem
+        description: True if listed on the GEM board.
+      - name: is_margin_eligible
+        description: True if eligible for margin trading.
+      - name: dbt_valid_from
+        description: When this version became current.
+      - name: dbt_valid_to
+        description: When this version was superseded; NULL for the current version.
+      - name: dbt_updated_at
+        description: Snapshot update timestamp for this version.
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [symbol, dbt_valid_from]
