@@ -5,6 +5,8 @@ Run via `python -m extract.main`. Orchestrates:
   2. Sequentially fetch OHLCV history per constituent symbol, diff it
      per-ticker against current raw state, accumulate changes.
   3. Flush accumulated changes once: one batch load + one targeted UPDATE.
+  4. Fetch each configured index's own daily OHLCV into raw.index_price_history
+     (non-fatal: a failure here is logged and skipped).
 """
 from __future__ import annotations
 
@@ -18,6 +20,7 @@ import psxdata
 from psxdata.exceptions import PSXDataError
 
 from extract import bigquery_io, config, motherduck_io
+from extract.bigquery_io import INDEX_PRICE_HISTORY_TABLE
 from extract.diff import (
     add_row_hashes,
     add_symbol_row_hashes,
@@ -90,6 +93,64 @@ def _get_storage(backend: str) -> _StorageModule:
     if backend == "bigquery":
         return bigquery_io
     raise ExtractionFailed(f"Unsupported BACKEND: {backend!r}")
+
+
+def _extract_index_prices(
+    index_names: tuple[str, ...],
+    storage: RawStorage,
+    client: Any,
+    backend_cfg: Any,
+    run_started_at: datetime,
+) -> None:
+    """Load each index's own daily OHLCV into raw.index_price_history.
+
+    PSX's historical endpoint accepts an index name (e.g. KSE100) as the
+    symbol, so this reuses the stock-history fetch, hash-diff and write path
+    against a separate table. Failures are logged and skipped rather than
+    raised: ticker OHLCV stays the run's critical path, and staleness is
+    caught downstream by the recency test on fact_index_ohlcv.
+    """
+    for index_name in index_names:
+        try:
+            history_df = psxdata.stocks(index_name, cache=False)
+        except PSXDataError as exc:
+            logger.warning("Skipping index prices for %s: fetch failed (%s)", index_name, exc)
+            continue
+
+        if history_df.empty:
+            logger.warning("Skipping index prices for %s: no history returned", index_name)
+            continue
+
+        # PSX has returned exact duplicate rows for KSE100 (2024-01-22); two
+        # rows with one (symbol, date) key would both land as is_latest.
+        history_df = history_df.drop_duplicates().copy()
+        history_df["symbol"] = index_name
+
+        try:
+            hashed_df = add_row_hashes(history_df)
+        except (ValueError, TypeError, KeyError) as exc:
+            logger.warning(
+                "Skipping index prices for %s: malformed row data (%s)", index_name, exc
+            )
+            continue
+
+        existing = storage.fetch_latest_hashes(
+            client, backend_cfg, index_name, table=INDEX_PRICE_HISTORY_TABLE
+        )
+        rows_to_insert, superseded_keys = diff_against_latest(hashed_df, existing)
+
+        if rows_to_insert.empty:
+            logger.info("Index prices for %s: no changes detected", index_name)
+            continue
+
+        storage.load_stock_history_rows(
+            client, backend_cfg, rows_to_insert, table=INDEX_PRICE_HISTORY_TABLE
+        )
+        storage.supersede_stock_history_keys(
+            client, backend_cfg, superseded_keys, run_started_at,
+            table=INDEX_PRICE_HISTORY_TABLE,
+        )
+        logger.info("Index prices for %s: %d rows written", index_name, len(rows_to_insert))
 
 
 def run(cfg: config.Config, storage: RawStorage, backend_cfg: Any) -> None:
@@ -225,6 +286,10 @@ def run(cfg: config.Config, storage: RawStorage, backend_cfg: Any) -> None:
         logger.info("Extraction complete: %d rows written", len(all_rows_to_insert))
     else:
         logger.info("Extraction complete: no changes detected, nothing written")
+
+    _extract_index_prices(
+        cfg.index_names, storage, client, backend_cfg, run_started_at
+    )
 
 
 def main() -> int:

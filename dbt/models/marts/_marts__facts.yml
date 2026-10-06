@@ -139,10 +139,23 @@ models:
         description: Index volume; NULL for some early dates.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: change_pct
-        description: Percent change of close versus the previous trading day, as a percentage (0.54 means 0.54%); loaded from a static seed.
+        description: Percent change of close versus the previous trading day, as a percentage (0.54 means 0.54%); NULL on each index's first date.
+      - name: is_anomaly
+        description: True when PSX's row fails OHLC validation (e.g. close outside the day's high/low); always false for seed rows.
+      - name: source
+        description: "'psx' for rows extracted daily from PSX; 'seed' for earlier dates PSX does not serve (static investing.com export)."
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [index_name, date]
+      # Warn when any index's latest date is more than 5 days old (covers weekends plus a holiday).
+      - dbt_utils.recency:
+          datepart: day
+          field: date
+          interval: 5
+          ignore_time_component: true
+          group_by_columns: [index_name]
+          config:
+            severity: warn
 
   - name: fact_sector_daily
     description: "Daily sector snapshot: advancers, decliners, unchanged, turnover and market cap per sector."

@@ -23,11 +23,11 @@ class RawStorage(Protocol):
     def ensure_dataset(self, client: Any, cfg: Any) -> None: ...
 
     def fetch_latest_hashes(
-        self, client: Any, cfg: Any, symbol: str
+        self, client: Any, cfg: Any, symbol: str, table: str = ...
     ) -> dict[tuple[str, str], str]: ...
 
     def load_stock_history_rows(
-        self, client: Any, cfg: Any, rows_df: pd.DataFrame
+        self, client: Any, cfg: Any, rows_df: pd.DataFrame, table: str = ...
     ) -> None: ...
 
     def supersede_stock_history_keys(
@@ -36,6 +36,7 @@ class RawStorage(Protocol):
         cfg: Any,
         keys: list[tuple[str, str]],
         run_started_at: datetime,
+        table: str = ...,
     ) -> None: ...
 
     def load_index_constituents(

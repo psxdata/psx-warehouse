@@ -6,5 +6,7 @@ select
     low,
     close,
     volume,
-    change_pct
+    change_pct,
+    is_anomaly,
+    source
 from {{ ref('stg_index_price_history') }}

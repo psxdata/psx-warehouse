@@ -14,6 +14,7 @@ import pytest
 
 from extract.config import ConfigError
 from extract.motherduck_io import (
+    INDEX_PRICE_HISTORY_TABLE,
     SCREENER_TABLE,
     SECTORS_TABLE,
     STOCK_HISTORY_TABLE,
@@ -112,6 +113,7 @@ def test_ensure_dataset_creates_both_tables(tmp_path: Path) -> None:
     tables = {row[0] for row in conn.execute("SHOW TABLES").fetchall()}
     assert tables == {
         "stock_history", "index_constituents", "symbols", "sectors", "screener",
+        "index_price_history",
     }
 
 
@@ -126,6 +128,7 @@ def test_ensure_dataset_is_idempotent(tmp_path: Path) -> None:
     tables = {row[0] for row in conn.execute("SHOW TABLES").fetchall()}
     assert tables == {
         "stock_history", "index_constituents", "symbols", "sectors", "screener",
+        "index_price_history",
     }
 
 
@@ -576,3 +579,40 @@ def test_load_screener_rows_raises_on_missing_required_column(tmp_path: Path) ->
 
     with pytest.raises(KeyError):
         load_screener_rows(conn, _cfg(), df, date(2026, 9, 2))
+
+
+def test_stock_history_functions_route_to_index_price_history_table(
+    tmp_path: Path,
+) -> None:
+    import duckdb
+
+    conn = duckdb.connect(str(tmp_path / "test.duckdb"))
+    ensure_dataset(conn, _cfg())
+    run_started_at = datetime.now(timezone.utc)
+    conn.execute(
+        f"INSERT INTO {INDEX_PRICE_HISTORY_TABLE} VALUES "
+        "('old-id', 'KSE100', '2024-01-05', 1.0, 1.0, 1.0, 1.0, 1, FALSE, "
+        "'old-hash', TRUE, ?, NULL)",
+        [run_started_at - timedelta(hours=1)],
+    )
+    rows_df = pd.DataFrame({
+        "symbol": ["KSE100"],
+        "date": [pd.Timestamp("2024-01-05")],
+        "open": [2.0], "high": [2.0], "low": [2.0], "close": [2.0],
+        "volume": [2], "is_anomaly": [False], "row_hash": ["new-hash"],
+    })
+
+    assert fetch_latest_hashes(
+        conn, _cfg(), "KSE100", table=INDEX_PRICE_HISTORY_TABLE
+    ) == {("KSE100", "2024-01-05"): "old-hash"}
+    load_stock_history_rows(conn, _cfg(), rows_df, table=INDEX_PRICE_HISTORY_TABLE)
+    supersede_stock_history_keys(
+        conn, _cfg(), [("KSE100", "2024-01-05")], run_started_at,
+        table=INDEX_PRICE_HISTORY_TABLE,
+    )
+
+    assert fetch_latest_hashes(
+        conn, _cfg(), "KSE100", table=INDEX_PRICE_HISTORY_TABLE
+    ) == {("KSE100", "2024-01-05"): "new-hash"}
+    stock_count = conn.execute(f"SELECT COUNT(*) FROM {STOCK_HISTORY_TABLE}").fetchone()[0]
+    assert stock_count == 0

@@ -11,7 +11,25 @@ import pytest
 from psxdata.exceptions import PSXConnectionError
 
 from extract import bigquery_io, config, motherduck_io
-from extract.main import ExtractionFailed, _get_storage, main, run
+from extract.diff import add_row_hashes
+from extract.main import (
+    ExtractionFailed,
+    _extract_index_prices,
+    _get_storage,
+    main,
+    run,
+)
+
+INDEX_TABLE = "index_price_history"
+
+
+@pytest.fixture(autouse=True)
+def _stub_index_prices(request: pytest.FixtureRequest):
+    """run()-level tests stub psxdata.stocks per ticker; keep the index-price
+    step (which also calls psxdata.stocks) out of their way. Tests of the
+    step itself call the real _extract_index_prices imported above."""
+    with patch("extract.main._extract_index_prices") as stub:
+        yield stub
 
 
 def _cfg() -> config.Config:
@@ -396,3 +414,133 @@ def test_run_continues_when_screener_payload_is_malformed(mock_psxdata: MagicMoc
 
     mock_storage.load_screener_rows.assert_called_once()
     mock_storage.load_stock_history_rows.assert_called_once()
+
+
+def _index_df() -> pd.DataFrame:
+    return pd.DataFrame({
+        "date": [pd.Timestamp("2024-01-04"), pd.Timestamp("2024-01-05")],
+        "open": [60000.0, 60100.0], "high": [60500.0, 60600.0],
+        "low": [59900.0, 60000.0], "close": [60100.0, 60400.0],
+        "volume": [1000, 2000], "is_anomaly": [False, False],
+    })
+
+
+@patch("extract.main.psxdata")
+def test_run_extracts_index_prices(
+    mock_psxdata: MagicMock, _stub_index_prices: MagicMock
+) -> None:
+    mock_psxdata.indices.return_value = _constituents_df()
+    mock_psxdata.stocks.return_value = _history_df(101.0)
+    storage = MagicMock()
+    storage.fetch_latest_hashes.return_value = {}
+
+    run(_cfg(), storage, MagicMock())
+
+    _stub_index_prices.assert_called_once()
+    assert _stub_index_prices.call_args[0][0] == ("KSE100",)
+
+
+@patch("extract.main.psxdata")
+def test_extract_index_prices_loads_new_rows_to_index_table(
+    mock_psxdata: MagicMock,
+) -> None:
+    mock_psxdata.stocks.return_value = _index_df()
+    storage = MagicMock()
+    storage.fetch_latest_hashes.return_value = {}
+
+    _extract_index_prices(("KSE100",), storage, MagicMock(), MagicMock(), MagicMock())
+
+    mock_psxdata.stocks.assert_called_once_with("KSE100", cache=False)
+    assert storage.fetch_latest_hashes.call_args[1]["table"] == INDEX_TABLE
+    written = storage.load_stock_history_rows.call_args[0][2]
+    assert storage.load_stock_history_rows.call_args[1]["table"] == INDEX_TABLE
+    assert written["symbol"].tolist() == ["KSE100", "KSE100"]
+    assert written["row_hash"].notna().all()
+
+
+@patch("extract.main.psxdata")
+def test_extract_index_prices_drops_exact_duplicate_rows(
+    mock_psxdata: MagicMock,
+) -> None:
+    df = _index_df()
+    mock_psxdata.stocks.return_value = pd.concat([df, df.iloc[[1]]], ignore_index=True)
+    storage = MagicMock()
+    storage.fetch_latest_hashes.return_value = {}
+
+    _extract_index_prices(("KSE100",), storage, MagicMock(), MagicMock(), MagicMock())
+
+    written = storage.load_stock_history_rows.call_args[0][2]
+    assert len(written) == 2
+
+
+@patch("extract.main.psxdata")
+def test_extract_index_prices_supersedes_changed_row(mock_psxdata: MagicMock) -> None:
+    df = _index_df()
+    mock_psxdata.stocks.return_value = df
+    hashed = add_row_hashes(df.assign(symbol="KSE100"))
+    storage = MagicMock()
+    storage.fetch_latest_hashes.return_value = {
+        ("KSE100", "2024-01-04"): hashed["row_hash"].iloc[0],
+        ("KSE100", "2024-01-05"): "stale-hash",
+    }
+    run_started_at = MagicMock()
+
+    _extract_index_prices(("KSE100",), storage, MagicMock(), MagicMock(), run_started_at)
+
+    written = storage.load_stock_history_rows.call_args[0][2]
+    assert len(written) == 1
+    keys, started = storage.supersede_stock_history_keys.call_args[0][2:4]
+    assert keys == [("KSE100", "2024-01-05")]
+    assert started is run_started_at
+    assert storage.supersede_stock_history_keys.call_args[1]["table"] == INDEX_TABLE
+
+
+@patch("extract.main.psxdata")
+def test_extract_index_prices_writes_nothing_when_unchanged(
+    mock_psxdata: MagicMock,
+) -> None:
+    df = _index_df()
+    mock_psxdata.stocks.return_value = df
+    hashed = add_row_hashes(df.assign(symbol="KSE100"))
+    storage = MagicMock()
+    storage.fetch_latest_hashes.return_value = {
+        ("KSE100", d.strftime("%Y-%m-%d")): h
+        for d, h in zip(hashed["date"], hashed["row_hash"])
+    }
+
+    _extract_index_prices(("KSE100",), storage, MagicMock(), MagicMock(), MagicMock())
+
+    storage.load_stock_history_rows.assert_not_called()
+    storage.supersede_stock_history_keys.assert_not_called()
+
+
+@patch("extract.main.psxdata")
+def test_extract_index_prices_warns_and_continues_on_fetch_failure(
+    mock_psxdata: MagicMock, caplog: pytest.LogCaptureFixture
+) -> None:
+    mock_psxdata.stocks.side_effect = [PSXConnectionError("down"), _index_df()]
+    storage = MagicMock()
+    storage.fetch_latest_hashes.return_value = {}
+
+    _extract_index_prices(
+        ("KSE100", "KMI30"), storage, MagicMock(), MagicMock(), MagicMock()
+    )
+
+    assert "KSE100" in caplog.text
+    written = storage.load_stock_history_rows.call_args[0][2]
+    assert written["symbol"].unique().tolist() == ["KMI30"]
+
+
+@patch("extract.main.psxdata")
+def test_extract_index_prices_skips_empty_and_malformed(
+    mock_psxdata: MagicMock,
+) -> None:
+    malformed = _index_df().drop(columns=["close"])
+    mock_psxdata.stocks.side_effect = [pd.DataFrame(), malformed]
+    storage = MagicMock()
+
+    _extract_index_prices(
+        ("KSE100", "KMI30"), storage, MagicMock(), MagicMock(), MagicMock()
+    )
+
+    storage.load_stock_history_rows.assert_not_called()
