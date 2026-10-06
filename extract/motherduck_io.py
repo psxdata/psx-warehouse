@@ -18,6 +18,10 @@ import pandas as pd
 from extract.config import ConfigError
 
 STOCK_HISTORY_TABLE = "stock_history"
+# Index-level OHLCV (e.g. KSE100). Same schema as stock_history, with the index
+# name in the symbol column, so the stock_history functions below serve both
+# tables via their table= argument.
+INDEX_PRICE_HISTORY_TABLE = "index_price_history"
 INDEX_CONSTITUENTS_TABLE = "index_constituents"
 SYMBOLS_TABLE = "symbols"
 SECTORS_TABLE = "sectors"
@@ -67,6 +71,24 @@ _SCREENER_COLUMNS = (
 # of session timezone, matching BigQuery's TIMESTAMP semantics.
 _CREATE_STOCK_HISTORY_SQL = f"""
     CREATE TABLE IF NOT EXISTS {STOCK_HISTORY_TABLE} (
+        history_id VARCHAR NOT NULL,
+        symbol VARCHAR NOT NULL,
+        date DATE NOT NULL,
+        open DOUBLE NOT NULL,
+        high DOUBLE NOT NULL,
+        low DOUBLE NOT NULL,
+        close DOUBLE NOT NULL,
+        volume BIGINT NOT NULL,
+        is_anomaly BOOLEAN NOT NULL,
+        row_hash VARCHAR NOT NULL,
+        is_latest BOOLEAN NOT NULL,
+        loaded_at TIMESTAMP WITH TIME ZONE NOT NULL,
+        superseded_at TIMESTAMP WITH TIME ZONE
+    )
+"""
+
+_CREATE_INDEX_PRICE_HISTORY_SQL = f"""
+    CREATE TABLE IF NOT EXISTS {INDEX_PRICE_HISTORY_TABLE} (
         history_id VARCHAR NOT NULL,
         symbol VARCHAR NOT NULL,
         date DATE NOT NULL,
@@ -208,16 +230,17 @@ def get_client(cfg: MotherDuckConfig) -> duckdb.DuckDBPyConnection:
 
 
 def ensure_dataset(client: duckdb.DuckDBPyConnection, cfg: MotherDuckConfig) -> None:
-    """Create all five raw tables if they don't already exist.
+    """Create all six raw tables if they don't already exist.
 
     cfg is unused here (the database is already selected by the connection
     string in get_client()) — kept in the signature for RawStorage shape
     parity with bigquery_io.ensure_dataset. Unlike BigQuery's lazy
-    CREATE_IF_NEEDED on first load, all five tables (stock_history,
-    index_constituents, symbols, sectors, screener) are created eagerly
+    CREATE_IF_NEEDED on first load, all six tables (stock_history,
+    index_price_history, index_constituents, symbols, sectors, screener) are created eagerly
     here, so fetch_latest_hashes never needs to handle a missing-table case.
     """
     client.execute(_CREATE_STOCK_HISTORY_SQL)
+    client.execute(_CREATE_INDEX_PRICE_HISTORY_SQL)
     client.execute(_CREATE_INDEX_CONSTITUENTS_SQL)
     client.execute(_CREATE_SYMBOLS_SQL)
     client.execute(_CREATE_SECTORS_SQL)
@@ -225,16 +248,19 @@ def ensure_dataset(client: duckdb.DuckDBPyConnection, cfg: MotherDuckConfig) -> 
 
 
 def fetch_latest_hashes(
-    client: duckdb.DuckDBPyConnection, cfg: MotherDuckConfig, symbol: str
+    client: duckdb.DuckDBPyConnection,
+    cfg: MotherDuckConfig,
+    symbol: str,
+    table: str = STOCK_HISTORY_TABLE,
 ) -> dict[tuple[str, str], str]:
     """Fetch (symbol, date) -> row_hash for one symbol's is_latest rows.
 
     No missing-table handling needed here (unlike bigquery_io's NotFound
-    catch) — ensure_dataset() always creates all five tables eagerly before
+    catch) — ensure_dataset() always creates all six tables eagerly before
     this is ever called.
     """
     rows = client.execute(
-        f"SELECT symbol, date, row_hash FROM {STOCK_HISTORY_TABLE} "
+        f"SELECT symbol, date, row_hash FROM {table} "
         "WHERE symbol = ? AND is_latest = TRUE",
         [symbol],
     ).fetchall()
@@ -242,7 +268,10 @@ def fetch_latest_hashes(
 
 
 def load_stock_history_rows(
-    client: duckdb.DuckDBPyConnection, cfg: MotherDuckConfig, rows_df: pd.DataFrame
+    client: duckdb.DuckDBPyConnection,
+    cfg: MotherDuckConfig,
+    rows_df: pd.DataFrame,
+    table: str = STOCK_HISTORY_TABLE,
 ) -> None:
     """Insert new/changed OHLCV rows into stock_history.
 
@@ -267,7 +296,7 @@ def load_stock_history_rows(
     try:
         column_list = ", ".join(_STOCK_HISTORY_COLUMNS)
         client.execute(
-            f"INSERT INTO {STOCK_HISTORY_TABLE} ({column_list}) "
+            f"INSERT INTO {table} ({column_list}) "
             f"SELECT {column_list} FROM stock_history_payload"
         )
     finally:
@@ -279,6 +308,7 @@ def supersede_stock_history_keys(
     cfg: MotherDuckConfig,
     keys: list[tuple[str, str]],
     run_started_at: datetime,
+    table: str = STOCK_HISTORY_TABLE,
 ) -> None:
     """Flip is_latest=FALSE and set superseded_at for the given keys.
 
@@ -299,7 +329,7 @@ def supersede_stock_history_keys(
     placeholders = ", ".join(["?"] * len(composite_keys))
     client.execute(
         f"""
-        UPDATE {STOCK_HISTORY_TABLE}
+        UPDATE {table}
         SET is_latest = FALSE, superseded_at = CURRENT_TIMESTAMP
         WHERE is_latest = TRUE
           AND (symbol || '|' || CAST(date AS VARCHAR)) IN ({placeholders})

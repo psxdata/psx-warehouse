@@ -17,6 +17,10 @@ from google.cloud import bigquery
 from extract.config import ConfigError
 
 STOCK_HISTORY_TABLE = "stock_history"
+# Index-level OHLCV (e.g. KSE100). Same schema as stock_history, with the index
+# name in the symbol column, so the stock_history functions below serve both
+# tables via their table= argument.
+INDEX_PRICE_HISTORY_TABLE = "index_price_history"
 INDEX_CONSTITUENTS_TABLE = "index_constituents"
 SYMBOLS_TABLE = "symbols"
 SECTORS_TABLE = "sectors"
@@ -151,7 +155,10 @@ def ensure_dataset(client: bigquery.Client, cfg: BigQueryConfig) -> None:
 
 
 def fetch_latest_hashes(
-    client: bigquery.Client, cfg: BigQueryConfig, symbol: str
+    client: bigquery.Client,
+    cfg: BigQueryConfig,
+    symbol: str,
+    table: str = STOCK_HISTORY_TABLE,
 ) -> dict[tuple[str, str], str]:
     """Fetch (symbol, date) -> row_hash for one symbol's is_latest rows.
 
@@ -163,7 +170,7 @@ def fetch_latest_hashes(
         Empty dict if raw.stock_history doesn't exist yet (first-ever run)
         or the symbol has no rows yet.
     """
-    table_id = _generate_table_id(cfg.gcp_project, cfg.bq_dataset, STOCK_HISTORY_TABLE)
+    table_id = _generate_table_id(cfg.gcp_project, cfg.bq_dataset, table)
     query = f"""
         SELECT symbol, date, row_hash
         FROM `{table_id}`
@@ -183,7 +190,10 @@ def fetch_latest_hashes(
 
 
 def load_stock_history_rows(
-    client: bigquery.Client, cfg: BigQueryConfig, rows_df: pd.DataFrame
+    client: bigquery.Client,
+    cfg: BigQueryConfig,
+    rows_df: pd.DataFrame,
+    table: str = STOCK_HISTORY_TABLE,
 ) -> None:
     """Batch-load new/changed OHLCV rows into raw.stock_history.
 
@@ -195,7 +205,7 @@ def load_stock_history_rows(
     """
     if rows_df.empty:
         return
-    table_id = _generate_table_id(cfg.gcp_project, cfg.bq_dataset, STOCK_HISTORY_TABLE)
+    table_id = _generate_table_id(cfg.gcp_project, cfg.bq_dataset, table)
     now = datetime.now(timezone.utc)
 
     payload = rows_df.copy()
@@ -222,6 +232,7 @@ def supersede_stock_history_keys(
     cfg: BigQueryConfig,
     keys: list[tuple[str, str]],
     run_started_at: datetime,
+    table: str = STOCK_HISTORY_TABLE,
 ) -> None:
     """Flip is_latest=FALSE and set superseded_at for the given keys.
 
@@ -245,7 +256,7 @@ def supersede_stock_history_keys(
     """
     if not keys:
         return
-    table_id = _generate_table_id(cfg.gcp_project, cfg.bq_dataset, STOCK_HISTORY_TABLE)
+    table_id = _generate_table_id(cfg.gcp_project, cfg.bq_dataset, table)
     composite_keys = [f"{symbol}|{date_str}" for symbol, date_str in keys]
     query = f"""
         UPDATE `{table_id}`

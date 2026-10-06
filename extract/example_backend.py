@@ -77,9 +77,13 @@ def ensure_dataset(client: Any, cfg: ExampleConfig) -> None:
 
 
 def fetch_latest_hashes(
-    client: Any, cfg: ExampleConfig, symbol: str
+    client: Any, cfg: ExampleConfig, symbol: str, table: str = "stock_history"
 ) -> dict[tuple[str, str], str]:
     """Return {(symbol, date): row_hash} for one symbol's current rows.
+
+    ``table`` is ``stock_history`` for tickers or ``index_price_history``
+    for index-level OHLCV (same schema, index name in the symbol column);
+    the same applies to the next two functions.
 
     Used to diff a freshly-fetched OHLCV history against what's already
     stored, so unchanged trading days are never rewritten — see
@@ -89,13 +93,15 @@ def fetch_latest_hashes(
     raise NotImplementedError("TODO: query current row hashes for this symbol")
 
 
-def load_stock_history_rows(client: Any, cfg: ExampleConfig, rows_df: pd.DataFrame) -> None:
+def load_stock_history_rows(
+    client: Any, cfg: ExampleConfig, rows_df: pd.DataFrame, table: str = "stock_history"
+) -> None:
     """Batch-append new/changed OHLCV rows. Append-only, never UPDATE/DELETE
     a row in place — restatement history is a real signal worth keeping (see
     DECISIONS.md "Raw layer & data modeling"). ``rows_df`` already carries a
     computed row_hash column from ``extract/diff.py``.
     """
-    raise NotImplementedError("TODO: append rows_df to the stock_history table")
+    raise NotImplementedError("TODO: append rows_df to the given table")
 
 
 def supersede_stock_history_keys(
@@ -103,6 +109,7 @@ def supersede_stock_history_keys(
     cfg: ExampleConfig,
     keys: list[tuple[str, str]],
     run_started_at: datetime,
+    table: str = "stock_history",
 ) -> None:
     """Flip ``is_latest`` false for the given (symbol, date) keys' PRIOR rows.
 

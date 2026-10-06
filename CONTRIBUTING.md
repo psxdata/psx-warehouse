@@ -30,7 +30,9 @@ use whatever library and SQL dialect makes sense for its store.
    `fetch_latest_symbol_hashes`, `load_symbols_rows`, `supersede_symbol_keys`,
    `load_sectors_rows`, `load_screener_rows`) — see
    `extract/example_backend.py` for what each one is actually responsible
-   for; its docstrings are the real spec, not repeated here.
+   for; its docstrings are the real spec, not repeated here. The three
+   `*stock_history*` functions also take a `table=` argument: the same code
+   writes `index_price_history` (index-level OHLCV, same schema).
 3. **Registration in `extract/main.py`'s `_get_storage()`** — the *only*
    place in `extract/` that knows which backend names exist. Add one `if
    backend == "yourbackend": return yourbackend_io` line; nothing else in
@@ -39,7 +41,7 @@ use whatever library and SQL dialect makes sense for its store.
 ### Two patterns worth copying deliberately
 
 - **Append-only, hash-diffed writes for anything with real history**
-  (`stock_history`, `symbols`): never `UPDATE`/`DELETE` a row in place.
+  (`stock_history`, `index_price_history`, `symbols`): never `UPDATE`/`DELETE` a row in place.
   Restatements are a real signal worth keeping, not noise to overwrite —
   see `DECISIONS.md` ("Raw layer & data modeling") for the incident that
   established this. `fetch_latest_*_hashes` + `load_*_rows` +

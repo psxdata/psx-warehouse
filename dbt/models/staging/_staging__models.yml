@@ -35,6 +35,10 @@ models:
         tests: [not_null]
       - name: date
         tests: [not_null]
+      - name: source
+        tests: [not_null, accepted_values: {values: ['psx', 'seed']}]
+      - name: is_anomaly
+        tests: [not_null]
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [index_name, date]

@@ -10,6 +10,7 @@ import pytest
 from google.api_core.exceptions import NotFound
 
 from extract.bigquery_io import (
+    INDEX_PRICE_HISTORY_TABLE,
     BigQueryConfig,
     ensure_dataset,
     fetch_latest_hashes,
@@ -368,3 +369,27 @@ def test_load_screener_rows_fills_missing_optional_columns() -> None:
     )
     for optional_col in optional_cols:
         assert pd.isna(payload[optional_col].iloc[0])
+
+
+def test_stock_history_functions_route_to_index_price_history_table() -> None:
+    client = MagicMock()
+    client.query.return_value.result.return_value = []
+    rows_df = pd.DataFrame({
+        "symbol": ["KSE100"],
+        "date": [pd.Timestamp("2024-01-05")],
+        "open": [1.0], "high": [1.0], "low": [1.0], "close": [1.0],
+        "volume": [1], "is_anomaly": [False], "row_hash": ["abc"],
+    })
+    run_started_at = datetime(2024, 1, 5, 12, 0, 0, tzinfo=timezone.utc)
+
+    fetch_latest_hashes(client, _cfg(), "KSE100", table=INDEX_PRICE_HISTORY_TABLE)
+    assert "raw.index_price_history" in client.query.call_args[0][0]
+
+    load_stock_history_rows(client, _cfg(), rows_df, table=INDEX_PRICE_HISTORY_TABLE)
+    assert client.load_table_from_dataframe.call_args[0][1] == "proj.raw.index_price_history"
+
+    supersede_stock_history_keys(
+        client, _cfg(), [("KSE100", "2024-01-04")], run_started_at,
+        table=INDEX_PRICE_HISTORY_TABLE,
+    )
+    assert "raw.index_price_history" in client.query.call_args[0][0]

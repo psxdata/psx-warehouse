@@ -11,6 +11,19 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- Daily index OHLCV extract: each `INDEX_NAMES` entry (default `KSE100`) is
+  fetched with `psxdata.stocks(<index>)` into a new append-only raw table
+  `index_price_history` (same schema and hash-diff/`is_latest` pattern as
+  `stock_history`). A failure is logged and skipped; it does not fail the
+  job. `fact_index_ohlcv` was stuck at 2026-09-04 because it only read the
+  static seed; it now advances daily (#58).
+- `stg_index_price_history` combines both sources: PSX rows wherever PSX
+  has data, seed rows only before each index's first PSX date (2016-10-06
+  for KSE100). `change_pct` is recomputed over the combined series. New
+  columns `is_anomaly` and `source` (`psx`/`seed`) on `fact_index_ohlcv`.
+- `dbt_utils.recency` warn test on `fact_index_ohlcv` (latest date per index
+  older than 5 days).
+
 - `extract/motherduck_io.py` supports a plain local `.duckdb` file (no
   MotherDuck account needed) as well as MotherDuck cloud — selected purely
   by whether `MOTHERDUCK_TOKEN` is set. New `DUCKDB_PATH` env var for the
@@ -64,6 +77,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   identically on any target, including BigQuery once it's live.
 
 ### Changed
+
+- `fact_index_ohlcv` open/high/low/close/volume for 2016-10-06 to
+  2026-09-04 now come from PSX instead of the investing.com seed. Closes
+  agree within 0.22%; opens differ by more than 0.1% on 720 days.
+- `fetch_latest_hashes`, `load_stock_history_rows` and
+  `supersede_stock_history_keys` take an optional `table=` argument
+  (default `stock_history`) in both backends and the `RawStorage` protocol.
 
 - Extraction now runs weekdays only (Mon-Fri) instead of daily. PSX doesn't
   trade on weekends, so a Saturday/Sunday run only ever re-fetched an
