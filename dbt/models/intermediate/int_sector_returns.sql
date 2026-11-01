@@ -12,7 +12,7 @@ with ticker_returns as (
 
 ),
 
-weights as (
+snapshot_weights as (
 
     -- Beginning-of-period cap weights: lag market_cap_m by one day so a day's
     -- weight doesn't already embed that same day's return. Using same-day
@@ -21,9 +21,41 @@ weights as (
     select
         ticker_key,
         snapshot_date as date,
-        lag(market_cap_m) over (partition by ticker_key order by snapshot_date) as market_cap_m
+        coalesce(
+            lag(market_cap_m) over (partition by ticker_key order by snapshot_date),
+            first_value(market_cap_m) over (partition by ticker_key order by snapshot_date)
+        ) as market_cap_m,
+        min(snapshot_date) over (partition by ticker_key) as first_snapshot_date,
+        first_value(market_cap_m) over (partition by ticker_key order by snapshot_date) as first_market_cap_m
     from {{ ref('int_index_constituents_pit') }}
     where index_name = 'KSE100'  -- hardcoded per Global Constraints: this project's extraction is currently scoped to a single tracked index (extract/config.py's INDEX_NAMES default), but that's a config default, not a schema guarantee - don't assume it's the only row forever
+
+),
+
+weights as (
+
+    -- Constituent snapshots only exist since go-live (2026-09-18), so a 63-day
+    -- return window could not complete for months. Bootstrap: before a
+    -- ticker's first snapshot, approximate its weight with its earliest known
+    -- market cap (approximate, constant weight; real snapshot weights take
+    -- over from the first snapshot on). Tickers never in KSE100 stay excluded.
+    select ticker_key, date, market_cap_m
+    from snapshot_weights
+
+    union all
+
+    select o.ticker_key, o.date, sw.first_market_cap_m as market_cap_m
+    from {{ ref('int_ohlcv_pit') }} o
+    inner join (
+        select distinct ticker_key, first_snapshot_date, first_market_cap_m
+        from snapshot_weights
+    ) sw on o.ticker_key = sw.ticker_key
+    where o.date < sw.first_snapshot_date
+      -- Only before the global go-live date, so a ticker added to the index
+      -- later never gets retroactive constant weights (that would rewrite
+      -- past sector returns). Tickers that left KSE100 before go-live are
+      -- excluded: the bootstrap series carries survivorship bias.
+      and o.date < (select min(date) from snapshot_weights)
 
 ),
 

@@ -3,8 +3,8 @@ version: 2
 models:
   - name: int_market_returns
     description: >
-      KSE-100 daily index return series, derived from
-      int_index_constituents_pit.current_index deduped to one row per day.
+      KSE-100 daily index return series, derived from the KSE-100 close in
+      stg_index_price_history (PSX daily extract, seed before 2016-10-06).
       Benchmark series for relative-strength, beta, and sector-rotation
       measures throughout this layer.
     columns:

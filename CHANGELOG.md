@@ -9,6 +9,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- `int_market_returns` now derives the KSE-100 series from the stitched index
+  close (`stg_index_price_history`) instead of constituent `current_index`,
+  which is never populated. Restores `beta_*_252d`, `corr_vs_index_252d`,
+  `relative_strength_*` and `fact_sector_rotation` relative strength/rank.
+- `int_ticker_relationships` 252-day guards now count valid pairs, so sector/
+  index correlations no longer appear from ~30 observations.
+- `int_sector_returns` bootstraps weights before the first constituent
+  snapshot (earliest known market cap), so `sector_return_63d` is populated
+  now rather than after 63 snapshot days. Pre-snapshot weights are approximate.
+
 ### Added
 
 - Daily index OHLCV extract: each `INDEX_NAMES` entry (default `KSE100`) is
