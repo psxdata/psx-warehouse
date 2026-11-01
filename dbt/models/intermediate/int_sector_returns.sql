@@ -21,7 +21,10 @@ snapshot_weights as (
     select
         ticker_key,
         snapshot_date as date,
-        lag(market_cap_m) over (partition by ticker_key order by snapshot_date) as market_cap_m,
+        coalesce(
+            lag(market_cap_m) over (partition by ticker_key order by snapshot_date),
+            first_value(market_cap_m) over (partition by ticker_key order by snapshot_date)
+        ) as market_cap_m,
         min(snapshot_date) over (partition by ticker_key) as first_snapshot_date,
         first_value(market_cap_m) over (partition by ticker_key order by snapshot_date) as first_market_cap_m
     from {{ ref('int_index_constituents_pit') }}
@@ -48,6 +51,11 @@ weights as (
         from snapshot_weights
     ) sw on o.ticker_key = sw.ticker_key
     where o.date < sw.first_snapshot_date
+      -- Only before the global go-live date, so a ticker added to the index
+      -- later never gets retroactive constant weights (that would rewrite
+      -- past sector returns). Tickers that left KSE100 before go-live are
+      -- excluded: the bootstrap series carries survivorship bias.
+      and o.date < (select min(date) from snapshot_weights)
 
 ),
 
