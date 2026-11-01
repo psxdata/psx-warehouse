@@ -57,7 +57,7 @@ windowed as (
         ticker_key,
         symbol,
         date,
-        case when count(stock_return) over (
+        case when count(case when market_return is not null then stock_return end) over (
             partition by symbol order by date rows between 251 preceding and current row
         ) >= 252
         then covar_samp(stock_return, market_return) over (
@@ -96,7 +96,7 @@ windowed as (
             ), 0)
         else null
         end as beta_downside_252d,
-        case when count(stock_return) over (
+        case when count(case when market_return is not null then stock_return end) over (
             partition by symbol order by date rows between 251 preceding and current row
         ) >= 252
         then corr(stock_return, market_return) over (
@@ -104,7 +104,7 @@ windowed as (
         )
         else null
         end as corr_vs_index_raw,
-        case when count(stock_return) over (
+        case when count(case when sector_return is not null then stock_return end) over (
             partition by symbol order by date rows between 251 preceding and current row
         ) >= 252
         then corr(stock_return, sector_return) over (
