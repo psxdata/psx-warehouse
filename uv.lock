@@ -2187,7 +2187,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0" },
     { name = "numpy", specifier = "<2.5" },
     { name = "pandas", specifier = ">=2.0,<4.0" },
-    { name = "psxdata", specifier = ">=1.1.1" },
+    { name = "psxdata", url = "https://github.com/psxdata/psxdata/archive/refs/tags/v1.2.1.zip" },
     { name = "pyarrow", specifier = ">=14.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4" },
@@ -2197,8 +2197,8 @@ provides-extras = ["dev", "dbt"]
 
 [[package]]
 name = "psxdata"
-version = "1.1.1"
-source = { registry = "https://pypi.org/simple" }
+version = "1.2.1"
+source = { url = "https://github.com/psxdata/psxdata/archive/refs/tags/v1.2.1.zip" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "diskcache" },
@@ -2211,10 +2211,34 @@ dependencies = [
     { name = "requests" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/73/e0081ca152e1b2c0f5425d96a32f6c449ceebbbdcdc3186a7d1a0b558177/psxdata-1.1.1.tar.gz", hash = "sha256:09b10fd96576678392e127a656227d84b8fd6a655cb082a10f0b2ccba5bfb602", size = 31844, upload-time = "2026-09-26T11:51:52.113Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/db/43/7178b32f79630d523e283d944f12aed1799519c7390a4d2e6b92ae51f14f/psxdata-1.1.1-py3-none-any.whl", hash = "sha256:b876e21fe8f49745383e6cb91558081f65466578f588dadf2b4aeb4de1c0758b", size = 38479, upload-time = "2026-09-26T11:51:50.717Z" },
+sdist = { hash = "sha256:49858d482e5fc5d322881bac56c69f0948203977cd04d60a73a7d79554552a49" }
+
+[package.metadata]
+requires-dist = [
+    { name = "beautifulsoup4", specifier = ">=4.11" },
+    { name = "diskcache", specifier = ">=5.4" },
+    { name = "httpx", specifier = ">=0.24" },
+    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.24" },
+    { name = "lxml", specifier = ">=4.9" },
+    { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5" },
+    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.25" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0" },
+    { name = "pandas", specifier = ">=2.0" },
+    { name = "pyarrow", specifier = ">=14.0" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'" },
+    { name = "pytest-cov", marker = "extra == 'dev'" },
+    { name = "pytest-timeout", marker = "extra == 'dev'", specifier = ">=2.1" },
+    { name = "python-dateutil", specifier = ">=2.8" },
+    { name = "requests", specifier = ">=2.28" },
+    { name = "requests", extras = ["socks"], marker = "extra == 'socks'", specifier = ">=2.28" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
+    { name = "tqdm", specifier = ">=4.64" },
+    { name = "types-python-dateutil", marker = "extra == 'dev'", specifier = ">=2.8" },
+    { name = "types-requests", marker = "extra == 'dev'", specifier = ">=2.28" },
 ]
+provides-extras = ["socks", "dev", "docs"]
 
 [[package]]
 name = "pyarrow"
