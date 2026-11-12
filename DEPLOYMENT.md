@@ -187,12 +187,16 @@ cd infra
 terraform init
 ```
 
-Create `infra/terraform.tfvars` (gitignored) with the one variable that has
+Create `infra/terraform.tfvars` (gitignored) with the two variables that have
 no default:
 
 ```hcl
 gcp_project = "your-real-project-id"
+alert_email = "you@example.com"
 ```
+
+`alert_email` receives the alerts in `infra/monitoring.tf`: one when Cloud
+Scheduler can't start the extract job, one when an execution fails.
 
 (Every other variable — region, dataset name/location, image reference,
 schedule — already has a sensible default; override only if you genuinely
