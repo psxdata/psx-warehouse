@@ -9,6 +9,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Require psxdata 1.3.0 (from the GitHub release archive; not on PyPI yet).
+  The extract doesn't use the screener's new `traded_today` column.
+
 ### Fixed
 
 - `int_market_returns` now derives the KSE-100 series from the stitched index
