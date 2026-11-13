@@ -9,6 +9,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Require psxdata 1.4.0 (GitHub release archive). `raw.screener.pe_ratio` is now NULL where PSX shows 0.00, which it uses for no meaningful P/E; `fact_cross_sectional_rankings` already treated `<= 0` as NULL. The new `sector_code`/`sector_name` columns aren't loaded (fixed schema).
+
 ### Fixed
 
 - Index rows were flagged `is_anomaly` whenever PSX's open or close sat outside

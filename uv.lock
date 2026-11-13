@@ -2187,7 +2187,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0" },
     { name = "numpy", specifier = "<2.5" },
     { name = "pandas", specifier = ">=2.0,<4.0" },
-    { name = "psxdata", url = "https://github.com/psxdata/psxdata/archive/refs/tags/v1.3.0.zip" },
+    { name = "psxdata", url = "https://github.com/psxdata/psxdata/archive/refs/tags/v1.4.0.zip" },
     { name = "pyarrow", specifier = ">=14.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4" },
@@ -2197,8 +2197,8 @@ provides-extras = ["dev", "dbt"]
 
 [[package]]
 name = "psxdata"
-version = "1.3.0"
-source = { url = "https://github.com/psxdata/psxdata/archive/refs/tags/v1.3.0.zip" }
+version = "1.4.0"
+source = { url = "https://github.com/psxdata/psxdata/archive/refs/tags/v1.4.0.zip" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "diskcache" },
@@ -2211,7 +2211,7 @@ dependencies = [
     { name = "requests" },
     { name = "tqdm" },
 ]
-sdist = { hash = "sha256:1b5cbca9f6276d029bd5fc95a5cdc3114bdca0d1e21857b199328076ed685468" }
+sdist = { hash = "sha256:1239a2b529d00933d26ece8dfd8a8a98b2563b20df778d57e2262c5516e97a8f" }
 
 [package.metadata]
 requires-dist = [
