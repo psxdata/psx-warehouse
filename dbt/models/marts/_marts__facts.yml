@@ -141,7 +141,15 @@ models:
       - name: change_pct
         description: Percent change of close versus the previous trading day, as a percentage (0.54 means 0.54%); NULL on each index's first date.
       - name: is_anomaly
-        description: True when PSX's row fails OHLC validation (e.g. close outside the day's high/low); always false for seed rows.
+        description: >-
+          True when the row is unusable: a missing or non-positive price, high below low, negative
+          volume, or open/close more than 1% (var index_ohlc_tolerance) outside the day's high/low. PSX's official open and
+          close come from the opening and closing sessions and can sit slightly outside the intraday
+          range, so those rows are not flagged. Always false for seed rows.
+        tests: [not_null]
+      - name: sdk_is_anomaly
+        description: The psxdata SDK's strict flag as extracted (any open/close outside high/low, or negative volume); kept for reference. Always false for seed rows.
+        tests: [not_null]
       - name: source
         description: "'psx' for rows extracted daily from PSX; 'seed' for earlier dates PSX does not serve (static investing.com export)."
     tests:
