@@ -15,7 +15,7 @@ dependencies = [
     "numpy<2.5",
     "pyarrow>=14.0",
     "google-cloud-bigquery>=3.11",
-    "duckdb>=1.5.5",
+    "duckdb>=1.5.5,<2",  # MotherDuck doesn't support DuckDB 2.x yet
 ]
 
 [project.optional-dependencies]

@@ -2182,7 +2182,7 @@ dev = [
 requires-dist = [
     { name = "dbt-bigquery", marker = "extra == 'dbt'", specifier = ">=1.8,<2.0" },
     { name = "dbt-core", marker = "extra == 'dbt'", specifier = ">=1.8,<2.0" },
-    { name = "duckdb", specifier = ">=1.5.5" },
+    { name = "duckdb", specifier = ">=1.5.5,<2" },
     { name = "google-cloud-bigquery", specifier = ">=3.11" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0" },
     { name = "numpy", specifier = "<2.5" },
