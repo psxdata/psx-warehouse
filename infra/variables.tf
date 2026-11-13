@@ -22,9 +22,9 @@ variable "bq_location" {
 }
 
 variable "docker_image" {
-  description = "Public Docker Hub image the Cloud Run Job pulls."
+  description = "Image the Cloud Run Job pulls at creation: the Docker Hub image, via the dockerhub remote repository (artifact_registry.tf)."
   type        = string
-  default     = "docker.io/mtauha/psx-warehouse:latest"
+  default     = "us-central1-docker.pkg.dev/psx-data-warehouse/dockerhub/mtauha/psx-warehouse:latest"
 }
 
 variable "github_repository_id" {
