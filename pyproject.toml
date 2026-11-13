@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE.md"}
 dependencies = [
-    "psxdata>=1.3.0",
+    "psxdata>=1.4.0",
     "pandas>=2.0,<4.0",
     "numpy<2.5",
     "pyarrow>=14.0",
@@ -55,7 +55,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
-# Temporary: psxdata 1.3.0 is not on PyPI yet (publish blocked on PyPI account
+# Temporary: psxdata 1.4.0 is not on PyPI yet (publish blocked on PyPI account
 # access). Remove this table and re-lock once it is published.
 [tool.uv.sources]
-psxdata = { url = "https://github.com/psxdata/psxdata/archive/refs/tags/v1.3.0.zip" }
+psxdata = { url = "https://github.com/psxdata/psxdata/archive/refs/tags/v1.4.0.zip" }
