@@ -44,3 +44,8 @@ variable "schedule_timezone" {
   type        = string
   default     = "Asia/Karachi"
 }
+
+variable "alert_email" {
+  description = "Email address that receives alerts when the daily extract fails to start or fails. Set it in terraform.tfvars (gitignored), not here."
+  type        = string
+}

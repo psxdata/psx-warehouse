@@ -7,6 +7,7 @@ locals {
     "cloudresourcemanager.googleapis.com",
     "serviceusage.googleapis.com",
     "artifactregistry.googleapis.com",
+    "monitoring.googleapis.com",
   ]
 }
 
