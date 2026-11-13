@@ -1,0 +1,43 @@
+unit_tests:
+  - name: stg_index_price_history_anomaly_rule
+    description: >-
+      PSX's official index close can sit just below the intraday low (2026-10-12: close 165,124.41,
+      low 165,168.50). That is not an anomaly; a close far outside the range, high below low, or
+      negative volume still is.
+    model: stg_index_price_history
+    given:
+      - input: source('raw', 'index_price_history')
+        rows:
+          # Real 2026-10-12 row: close 0.03% below the low.
+          - {symbol: KSE100, date: 2026-10-12, open: 166149.77, high: 166988.32, low: 165168.50, close: 165124.41, volume: 104274490, is_anomaly: true, is_latest: true}
+          # Close 3% below the low: still an anomaly.
+          - {symbol: KSE100, date: 2026-10-13, open: 165421.30, high: 166070.48, low: 164773.67, close: 159800.00, volume: 91079484, is_anomaly: true, is_latest: true}
+          # High below low: an anomaly.
+          - {symbol: KSE100, date: 2026-10-14, open: 164849.55, high: 164060.34, low: 165629.35, close: 165417.51, volume: 149807717, is_anomaly: true, is_latest: true}
+          # Negative volume: an anomaly.
+          - {symbol: KSE100, date: 2026-10-15, open: 165800.74, high: 166877.02, low: 165613.12, close: 166186.17, volume: -1, is_anomaly: true, is_latest: true}
+          # Clean row.
+          - {symbol: KSE100, date: 2026-10-16, open: 166200.00, high: 166900.00, low: 165900.00, close: 166500.00, volume: 150000000, is_anomaly: false, is_latest: true}
+          # Superseded row: excluded.
+          - {symbol: KSE100, date: 2026-10-16, open: 1.0, high: 1.0, low: 1.0, close: 1.0, volume: 1, is_anomaly: false, is_latest: false}
+      - input: ref('seed_index_price_history')
+        format: sql
+        rows: |
+          select
+            cast(null as string) as index_name,
+            cast(null as date) as date,
+            cast(null as float64) as open,
+            cast(null as float64) as high,
+            cast(null as float64) as low,
+            cast(null as float64) as close,
+            cast(null as int64) as volume,
+            cast(null as float64) as change_pct
+          from unnest([1])
+          where false
+    expect:
+      rows:
+        - {date: 2026-10-12, is_anomaly: false, sdk_is_anomaly: true}
+        - {date: 2026-10-13, is_anomaly: true, sdk_is_anomaly: true}
+        - {date: 2026-10-14, is_anomaly: true, sdk_is_anomaly: true}
+        - {date: 2026-10-15, is_anomaly: true, sdk_is_anomaly: true}
+        - {date: 2026-10-16, is_anomaly: false, sdk_is_anomaly: false}

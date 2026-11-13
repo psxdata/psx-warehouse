@@ -8,5 +8,6 @@ select
     volume,
     change_pct,
     is_anomaly,
+    sdk_is_anomaly,
     source
 from {{ ref('stg_index_price_history') }}

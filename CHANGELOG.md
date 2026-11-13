@@ -9,6 +9,27 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- Index rows were flagged `is_anomaly` whenever PSX's open or close sat outside
+  the day's high/low. PSX's official index open and close come from the
+  opening and closing sessions and can legitimately do that: KSE-100 closed at
+  165,124.41 on 2026-10-12, below that day's 165,168.50 low. 10 real KSE-100
+  closes (2017–2026) were flagged and dropped from `int_market_returns`, which
+  turned the next day's market return into a two-day return.
+  `stg_index_price_history` now recomputes the flag: open/close up to 1%
+  (`index_ohlc_tolerance`) outside the range is fine; missing or non-positive
+  prices, high below low, negative volume and anything further out are still
+  flagged. All 10 rows clear; none newly flagged. The SDK's original flag stays
+  available as `sdk_is_anomaly` on `stg_index_price_history` and
+  `fact_index_ohlcv`. Needs a one-off
+  `dbt build --full-refresh -s stg_index_price_history+`: the incremental
+  `int_ticker_relationships` and `fact_cross_sectional_rankings` only rewrite
+  their last 250 days.
+- Unit test for the index anomaly rule, and a warn-level test for a PSX index
+  close repeated unchanged from the previous day (a stale close a range check
+  can't catch).
+
 ### Changed
 
 - Require psxdata 1.3.0 (from the GitHub release archive; not on PyPI yet).
