@@ -11,6 +11,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- Require psxdata 1.5.0 (GitHub release archive). Its new `badge`/`ex_flag` columns on the screener and index constituents aren't loaded (fixed schemas).
+
+### Changed
+
 - Require psxdata 1.4.0 (GitHub release archive). `raw.screener.pe_ratio` is now NULL where PSX shows 0.00, which it uses for no meaningful P/E; `fact_cross_sectional_rankings` already treated `<= 0` as NULL. The new `sector_code`/`sector_name` columns aren't loaded (fixed schema).
 
 ### Fixed
