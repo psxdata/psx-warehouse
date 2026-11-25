@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: metric_catalog
+    description: "Catalog of mart columns tagged as queryable metrics: one row per metric with its mart, column, label, unit and definition. Built from the column-level `metric` meta in the marts yml at run time."
+    columns:
+      - name: metric
+        description: Metric id; the column name in its mart (for example rsi_14).
+        tests: [unique, not_null]
+      - name: mart
+        description: Name of the mart model holding the metric.
+        tests:
+          - not_null
+          - accepted_values:
+              values: [fact_technical_indicators, fact_ticker_relationships, fact_valuation_daily, fact_cross_sectional_rankings]
+              quote: true
+      - name: column_name
+        description: Column in the mart that holds the metric value.
+        tests: [not_null]
+      - name: label
+        description: Short human-readable label.
+      - name: unit
+        description: Unit of the value (fraction, pkr, ratio, correlation, index_0_100, percent).
+      - name: description
+        description: Column definition, copied from the mart's column description.

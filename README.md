@@ -40,6 +40,8 @@ sync, or deploying your own copy to GCP): [DEPLOYMENT.md](DEPLOYMENT.md).
   - `models/marts/` — three Type-1 dimensions (`dim_sectors`, `dim_indices`,
     `dim_date`) and five fact tables (`fact_ohlcv`, `fact_restatement_history`,
     `fact_index_membership`, `fact_sector_daily`, `fact_valuation_daily`)
+    plus `metric_catalog`, a table of the mart columns tagged as queryable
+    metrics (built from the column-level `metric` meta in the marts yml)
 - `infra/` — Terraform for the production GCP deployment: one service
   account, its IAM bindings, a BigQuery dataset, a Cloud Run Job, and a
   Cloud Scheduler job. See [DEPLOYMENT.md](DEPLOYMENT.md#production-deployment-gcp).

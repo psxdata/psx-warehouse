@@ -221,12 +221,18 @@ models:
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: market_cap
         description: Market capitalization, PKR.
+        config:
+          meta:
+            metric: {label: "Market capitalization", unit: pkr}
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: price
         description: Last price, PKR.
         tests: [{dbt_utils.accepted_range: {min_value: 0}}]
       - name: pe_ratio
         description: Price-to-earnings ratio.
+        config:
+          meta:
+            metric: {label: "P/E ratio", unit: ratio}
         tests:
           - dbt_utils.accepted_range:
               min_value: -1000
@@ -234,6 +240,9 @@ models:
               config: {severity: warn}
       - name: dividend_yield
         description: Dividend yield, percent.
+        config:
+          meta:
+            metric: {label: "Dividend yield", unit: percent}
         tests:
           - dbt_utils.accepted_range:
               min_value: 0
