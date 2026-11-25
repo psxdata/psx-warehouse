@@ -23,6 +23,9 @@ models:
               field: date
       - name: max_drawdown_pct
         description: "Drawdown of close from its running peak to date, as a fraction: 0 at a new high, negative below it (-0.2 means 20% below the peak)."
+        config:
+          meta:
+            metric: {label: "Drawdown from peak", unit: fraction}
         tests: [not_null]
       - name: ma_crossover_event
         description: golden_cross or death_cross when the 50-day MA crosses the 200-day MA on this date, else NULL.
@@ -34,36 +37,72 @@ models:
                 where: "ma_crossover_event is not null"
       - name: daily_return_pct
         description: Close-to-close return versus the previous trading day, as a fraction (0.01 means 1%), not a percentage.
+        config:
+          meta:
+            metric: {label: "Daily return", unit: fraction}
       - name: ma_20
         description: 20-day simple moving average of close.
+        config:
+          meta:
+            metric: {label: "20-day moving average", unit: pkr}
       - name: ma_50
         description: 50-day simple moving average of close.
+        config:
+          meta:
+            metric: {label: "50-day moving average", unit: pkr}
       - name: ma_200
         description: 200-day simple moving average of close.
+        config:
+          meta:
+            metric: {label: "200-day moving average", unit: pkr}
       - name: rsi_14
         description: 14-day relative strength index, 0-100, from simple (not Wilder-smoothed) 14-day averages of gains and losses; 100 when there were no losses, NULL when there were no price changes.
+        config:
+          meta:
+            metric: {label: "14-day RSI", unit: index_0_100}
       - name: macd_line
         description: MACD line (12-day EMA of close minus 26-day EMA of close; EMAs are computed over a truncated lookback of 90 and 180 rows).
+        config:
+          meta:
+            metric: {label: "MACD line", unit: pkr}
       - name: macd_signal
         description: 9-day EMA of the MACD line.
       - name: macd_histogram
         description: MACD line minus signal.
       - name: bollinger_upper
         description: Upper Bollinger band (20-day MA of close plus 2 sample standard deviations of close).
+        config:
+          meta:
+            metric: {label: "Upper Bollinger band", unit: pkr}
       - name: bollinger_mid
         description: Middle Bollinger band (20-day MA of close).
       - name: bollinger_lower
         description: Lower Bollinger band (20-day MA of close minus 2 sample standard deviations of close).
+        config:
+          meta:
+            metric: {label: "Lower Bollinger band", unit: pkr}
       - name: rolling_vol_20
         description: Sample standard deviation of daily returns over the last 20 trading days, as a fraction; not annualized.
+        config:
+          meta:
+            metric: {label: "20-day rolling volatility", unit: fraction}
       - name: rolling_vol_50
         description: Sample standard deviation of daily returns over the last 50 trading days, as a fraction; not annualized.
       - name: rolling_vol_200
         description: Sample standard deviation of daily returns over the last 200 trading days, as a fraction; not annualized.
+        config:
+          meta:
+            metric: {label: "200-day rolling volatility", unit: fraction}
       - name: trailing_return_5d
         description: Return over the trailing 5 trading days, as a fraction (0.01 means 1%).
+        config:
+          meta:
+            metric: {label: "5-day trailing return", unit: fraction}
       - name: trailing_return_252d
         description: Return over the trailing 252 trading days, as a fraction (0.01 means 1%).
+        config:
+          meta:
+            metric: {label: "252-day trailing return", unit: fraction}
     tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [symbol, date]

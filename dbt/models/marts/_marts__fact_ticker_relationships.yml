@@ -17,6 +17,9 @@ models:
         tests: [not_null, relationships: {to: ref('dim_date'), field: date}]
       - name: beta_full_252d
         description: 252-day beta of daily returns versus the KSE-100; NULL until 252 observations exist.
+        config:
+          meta:
+            metric: {label: "252-day beta vs KSE-100", unit: ratio}
         tests:
           - dbt_utils.accepted_range:
               min_value: -10
@@ -38,9 +41,15 @@ models:
               config: {severity: warn}
       - name: corr_vs_index_252d
         description: 252-day correlation of daily returns with the KSE-100; NULL until 252 observations exist.
+        config:
+          meta:
+            metric: {label: "252-day correlation vs KSE-100", unit: correlation}
         tests: [{dbt_utils.accepted_range: {min_value: -1, max_value: 1}}]
       - name: corr_vs_sector_252d
         description: 252-day correlation of daily returns with the stock's own sector (cap-weighted KSE-100 constituents); NULL until 252 observations exist.
+        config:
+          meta:
+            metric: {label: "252-day correlation vs own sector", unit: correlation}
         tests: [{dbt_utils.accepted_range: {min_value: -1, max_value: 1}}]
     tests:
       - dbt_utils.unique_combination_of_columns:

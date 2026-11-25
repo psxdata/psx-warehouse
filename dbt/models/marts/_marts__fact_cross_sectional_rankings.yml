@@ -44,6 +44,9 @@ models:
               config: {where: "low_vol_quintile is not null"}
       - name: momentum_63d
         description: Trailing 63-trading-day return, as a fraction (0.1 means 10%).
+        config:
+          meta:
+            metric: {label: "63-day momentum", unit: fraction}
       - name: momentum_63d_rank
         description: Rank of momentum_63d within the day's universe; 1 = highest momentum, ties share a rank.
       - name: relative_strength_63d
